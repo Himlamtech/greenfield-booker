@@ -6,7 +6,6 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useEffect, useState } from "react";
 import UserLayout from "./layouts/UserLayout";
 import AdminLayout from "./layouts/AdminLayout";
-import { AdminAuthProvider, RequireAdminAuth } from "./hooks/useAdminAuth";
 
 // User Pages
 import Home from "./pages/user/Home";
@@ -19,8 +18,6 @@ import Dashboard from "./pages/admin/Dashboard";
 import FieldManagement from "./pages/admin/FieldManagement";
 import ProductManagement from "./pages/admin/ProductManagement";
 import Feedback from "./pages/admin/Feedback";
-import AdminLogin from "./pages/admin/Login";
-import AdminRegister from "./pages/admin/Register";
 
 // Not Found Page
 import NotFound from "./pages/NotFound";
@@ -79,21 +76,8 @@ const App = () => {
               <Route path="dich-vu" element={<Services />} />
             </Route>
             
-            {/* Admin Auth Routes */}
-            <Route path="/admin/login" element={<AdminLogin />} />
-            <Route path="/admin/register" element={<AdminRegister />} />
-            
-            {/* Protected Admin Routes */}
-            <Route 
-              path="/admin" 
-              element={
-                <AdminAuthProvider>
-                  <RequireAdminAuth>
-                    <AdminLayout />
-                  </RequireAdminAuth>
-                </AdminAuthProvider>
-              }
-            >
+            {/* Admin Routes */}
+            <Route path="/admin" element={<AdminLayout />}>
               <Route index element={<Dashboard />} />
               <Route path="quan-ly-san" element={<FieldManagement />} />
               <Route path="quan-ly-san-pham" element={<ProductManagement />} />
