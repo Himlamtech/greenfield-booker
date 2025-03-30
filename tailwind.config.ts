@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -61,7 +62,21 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
-				}
+				},
+				// Thêm màu chủ đạo của sân bóng
+				'field': {
+					50: '#F1F8E9',
+					100: '#DCEDC8',
+					200: '#C5E1A5',
+					300: '#AED581',
+					400: '#9CCC65',
+					500: '#8BC34A',
+					600: '#7CB342',
+					700: '#689F38',
+					800: '#558B2F',
+					900: '#33691E',
+				},
+				'field-dark': '#2E7D32',
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
@@ -84,11 +99,24 @@ export default {
 					to: {
 						height: '0'
 					}
+				},
+				'bounce-horizontal': {
+					'0%, 100%': { transform: 'translateX(0)' },
+					'50%': { transform: 'translateX(10px)' }
+				},
+				'float': {
+					'0%, 100%': { transform: 'translateY(0)' },
+					'50%': { transform: 'translateY(-10px)' }
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				'bounce-horizontal': 'bounce-horizontal 1s infinite',
+				'float': 'float 3s ease-in-out infinite'
+			},
+			backgroundImage: {
+				'gradient-field': 'linear-gradient(184.1deg, rgba(231, 245, 220, 1) 44.7%, rgba(200, 230, 201, 1) 90%)',
 			}
 		}
 	},
