@@ -28,7 +28,7 @@ const queryClient = new QueryClient();
 const GoogleMapsLoader = () => {
   useEffect(() => {
     // Kiểm tra xem script đã được tải chưa
-    if (!window.google) {
+    if (!document.querySelector('script[src*="maps.googleapis.com/maps/api"]')) {
       const script = document.createElement("script");
       script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyBnigY9gkLxKhMdVoqUeCHUTOypSoeVz3I&libraries=places`;
       script.async = true;

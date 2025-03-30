@@ -1,32 +1,52 @@
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { MapPin, Mail, Phone, Calendar, Users } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const Home = () => {
   const mapRef = useRef<HTMLDivElement>(null);
+  const [mapLoaded, setMapLoaded] = useState(false);
   
   useEffect(() => {
-    // Khởi tạo Google Map
-    if (mapRef.current) {
+    // Theo dõi khi Google Maps API được tải
+    const checkGoogleMapsLoaded = () => {
+      if (window.google && window.google.maps) {
+        setMapLoaded(true);
+        initMap();
+      } else {
+        // Kiểm tra lại sau 500ms
+        setTimeout(checkGoogleMapsLoaded, 500);
+      }
+    };
+    
+    checkGoogleMapsLoaded();
+    
+    return () => {
+      // Cleanup nếu cần
+    };
+  }, []);
+  
+  const initMap = () => {
+    if (!mapRef.current || !window.google) return;
+    
+    try {
       const location = { lat: 20.9732762, lng: 105.7875231 }; // Tọa độ 96A Đ. Trần Phú, Hà Đông
       
-      // @ts-ignore
       const map = new window.google.maps.Map(mapRef.current, {
         center: location,
         zoom: 16,
       });
       
-      // @ts-ignore
       new window.google.maps.Marker({
         position: location,
         map,
         title: "Sân Bóng Xanh",
       });
+    } catch (error) {
+      console.error("Error initializing map:", error);
     }
-  }, []);
+  };
   
   const facilities = [
     {
