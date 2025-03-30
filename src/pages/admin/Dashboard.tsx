@@ -1,13 +1,29 @@
 
-import { useState } from "react";
-import { Card } from "@/components/ui/card";
+import { useState, useRef } from "react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { BarChart, CalendarIcon, ShoppingCartIcon } from "lucide-react";
+import { BarChart, CalendarIcon, ShoppingCartIcon, ArrowUpIcon, ArrowDownIcon, ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { format, addDays, subDays, startOfWeek, endOfWeek, isWithinInterval, isSameDay } from "date-fns";
+import { vi } from "date-fns/locale";
+import { Badge } from "@/components/ui/badge";
 
 const Dashboard = () => {
   const [periodType, setPeriodType] = useState<"day" | "week" | "month" | "year">("week");
-  const [comparePeriod, setComparePeriod] = useState(false);
+  const [comparePeriod, setComparePeriod] = useState(true);
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const calendarRef = useRef<HTMLDivElement>(null);
   
   // Dữ liệu thống kê giả định
   const stats = {
@@ -84,27 +100,111 @@ const Dashboard = () => {
         return [];
     }
   };
-  
+
   // Dữ liệu so sánh với kỳ trước đó
   const compareData = stats.compareData[periodType];
   const percentChange = ((compareData.current - compareData.previous) / compareData.previous) * 100;
   const chartData = getChartData();
   
+  // Di chuyển đến tuần/kỳ trước hoặc sau
+  const navigatePeriod = (direction: 'prev' | 'next') => {
+    if (direction === 'prev') {
+      switch(periodType) {
+        case 'day': 
+          setCurrentDate(prevDate => subDays(prevDate, 1));
+          break;
+        case 'week': 
+          setCurrentDate(prevDate => subDays(prevDate, 7));
+          break;
+        case 'month': 
+          setCurrentDate(prevDate => {
+            const newDate = new Date(prevDate);
+            newDate.setMonth(newDate.getMonth() - 1);
+            return newDate;
+          });
+          break;
+        case 'year': 
+          setCurrentDate(prevDate => {
+            const newDate = new Date(prevDate);
+            newDate.setFullYear(newDate.getFullYear() - 1);
+            return newDate;
+          });
+          break;
+      }
+    } else {
+      switch(periodType) {
+        case 'day': 
+          setCurrentDate(prevDate => addDays(prevDate, 1));
+          break;
+        case 'week': 
+          setCurrentDate(prevDate => addDays(prevDate, 7));
+          break;
+        case 'month': 
+          setCurrentDate(prevDate => {
+            const newDate = new Date(prevDate);
+            newDate.setMonth(newDate.getMonth() + 1);
+            return newDate;
+          });
+          break;
+        case 'year': 
+          setCurrentDate(prevDate => {
+            const newDate = new Date(prevDate);
+            newDate.setFullYear(newDate.getFullYear() + 1);
+            return newDate;
+          });
+          break;
+      }
+    }
+  };
+  
+  // Format current period display
+  const getCurrentPeriodLabel = () => {
+    switch(periodType) {
+      case 'day': 
+        return format(currentDate, 'dd/MM/yyyy');
+      case 'week': 
+        const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
+        const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 });
+        return `${format(weekStart, 'dd/MM')} - ${format(weekEnd, 'dd/MM/yyyy')}`;
+      case 'month': 
+        return format(currentDate, 'MM/yyyy');
+      case 'year': 
+        return format(currentDate, 'yyyy');
+      default:
+        return '';
+    }
+  };
+  
   // Dữ liệu lịch đặt sân sắp tới
   const upcomingBookings = [
-    { id: 1, customer: 'Nguyễn Văn A', phone: '0901234567', field: 'Sân A', date: 'Hôm nay', time: '17:00 - 18:00', price: 350000, status: 'paid' },
-    { id: 2, customer: 'Trần Văn B', phone: '0912345678', field: 'Sân B', date: 'Hôm nay', time: '18:00 - 19:00', price: 350000, status: 'deposit' },
-    { id: 3, customer: 'Lê Văn C', phone: '0923456789', field: 'Sân C', date: 'Hôm nay', time: '19:00 - 20:00', price: 350000, status: 'pending' },
-    { id: 4, customer: 'Phạm Văn D', phone: '0934567890', field: 'Sân D', date: 'Ngày mai', time: '17:00 - 18:00', price: 350000, status: 'paid' },
-    { id: 5, customer: 'Hoàng Văn E', phone: '0945678901', field: 'Sân A', date: 'Ngày mai', time: '18:00 - 19:00', price: 350000, status: 'deposit' },
+    { id: 1, customer: 'Nguyễn Văn A', phone: '0901234567', field: 'Sân A', date: new Date(), time: '17:00 - 18:00', price: 350000, status: 'paid' },
+    { id: 2, customer: 'Trần Văn B', phone: '0912345678', field: 'Sân B', date: new Date(), time: '18:00 - 19:00', price: 350000, status: 'deposit' },
+    { id: 3, customer: 'Lê Văn C', phone: '0923456789', field: 'Sân C', date: new Date(), time: '19:00 - 20:00', price: 350000, status: 'pending' },
+    { id: 4, customer: 'Phạm Văn D', phone: '0934567890', field: 'Sân D', date: addDays(new Date(), 1), time: '17:00 - 18:00', price: 350000, status: 'paid' },
+    { id: 5, customer: 'Hoàng Văn E', phone: '0945678901', field: 'Sân A', date: addDays(new Date(), 1), time: '18:00 - 19:00', price: 350000, status: 'deposit' },
+    { id: 6, customer: 'Vũ Văn F', phone: '0956789012', field: 'Sân B', date: addDays(new Date(), 2), time: '19:00 - 20:00', price: 350000, status: 'pending' },
+    { id: 7, customer: 'Đặng Văn G', phone: '0967890123', field: 'Sân C', date: addDays(new Date(), 2), time: '20:00 - 21:00', price: 350000, status: 'paid' },
+    { id: 8, customer: 'Bùi Văn H', phone: '0978901234', field: 'Sân D', date: addDays(new Date(), 3), time: '17:00 - 18:00', price: 350000, status: 'deposit' },
   ];
+
+  // Lọc các đặt sân cho ngày được chọn
+  const filteredBookings = upcomingBookings.filter(booking => 
+    isSameDay(booking.date, selectedDate)
+  );
+
+  // Xác định ngày có đặt sân
+  const getBookedDates = () => {
+    return upcomingBookings.map(booking => booking.date);
+  };
+  
+  const bookedDates = getBookedDates();
 
   return (
     <div>
       <h1 className="text-3xl font-bold mb-8">Thống kê tổng quan</h1>
       
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
         <Card className="p-6">
           <div className="flex items-start">
             <div className="p-2 rounded-md bg-blue-100">
@@ -149,7 +249,27 @@ const Dashboard = () => {
         {/* Chart with Period Selection */}
         <Card className="p-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
-            <h2 className="text-lg font-semibold">Biểu đồ doanh thu</h2>
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-semibold">Biểu đồ doanh thu</h2>
+              <div className="text-sm text-gray-500">{getCurrentPeriodLabel()}</div>
+            </div>
+            
+            <div className="flex gap-2 mt-3 sm:mt-0">
+              <Button 
+                variant="outline" 
+                size="icon"
+                onClick={() => navigatePeriod('prev')}
+              >
+                <ChevronLeftIcon className="h-4 w-4" />
+              </Button>
+              <Button 
+                variant="outline" 
+                size="icon"
+                onClick={() => navigatePeriod('next')}
+              >
+                <ChevronRightIcon className="h-4 w-4" />
+              </Button>
+            </div>
             
             <div className="flex flex-col sm:flex-row gap-3 mt-3 sm:mt-0">
               <Tabs defaultValue="week" value={periodType} onValueChange={(v) => setPeriodType(v as "day" | "week" | "month" | "year")}>
@@ -162,7 +282,8 @@ const Dashboard = () => {
               </Tabs>
               
               <Select 
-                defaultValue="current" 
+                defaultValue="compare" 
+                value={comparePeriod ? "compare" : "current"}
                 onValueChange={(v) => setComparePeriod(v === "compare")}
               >
                 <SelectTrigger className="w-40">
@@ -190,8 +311,13 @@ const Dashboard = () => {
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Thay đổi</p>
-                  <p className={`text-lg font-semibold ${percentChange >= 0 ? "text-green-600" : "text-red-600"}`}>
-                    {percentChange >= 0 ? "+" : ""}{percentChange.toFixed(1)}%
+                  <p className={`text-lg font-semibold flex items-center ${percentChange >= 0 ? "text-green-600" : "text-red-600"}`}>
+                    {percentChange >= 0 ? (
+                      <ArrowUpIcon className="w-4 h-4 mr-1" />
+                    ) : (
+                      <ArrowDownIcon className="w-4 h-4 mr-1" />
+                    )}
+                    {Math.abs(percentChange).toFixed(1)}%
                   </p>
                 </div>
               </div>
@@ -219,45 +345,98 @@ const Dashboard = () => {
       </div>
       
       {/* Upcoming Bookings Calendar */}
-      <Card className="mt-6 p-6">
-        <h2 className="text-lg font-semibold mb-4">Lịch đặt sân sắp tới</h2>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="text-xs font-medium text-gray-500 border-b">
-                <th className="pb-2 text-left">Khách hàng</th>
-                <th className="pb-2 text-left">Sân</th>
-                <th className="pb-2 text-left">Thời gian</th>
-                <th className="pb-2 text-left">Ngày</th>
-                <th className="pb-2 text-left">Giá</th>
-                <th className="pb-2 text-left">Trạng thái</th>
-              </tr>
-            </thead>
-            <tbody>
-              {upcomingBookings.map((booking) => (
-                <tr key={booking.id} className="border-b border-gray-100 last:border-0">
-                  <td className="py-3">
-                    <div className="font-medium">{booking.customer}</div>
-                    <div className="text-xs text-gray-500">{booking.phone}</div>
-                  </td>
-                  <td className="py-3">{booking.field}</td>
-                  <td className="py-3">{booking.time}</td>
-                  <td className="py-3">{booking.date}</td>
-                  <td className="py-3">{booking.price.toLocaleString()}đ</td>
-                  <td className="py-3">
-                    <span className={`text-xs px-2 py-1 rounded-full ${
-                      booking.status === 'paid' ? "bg-green-100 text-green-800" : 
-                      booking.status === 'deposit' ? "bg-blue-100 text-blue-800" : "bg-yellow-100 text-yellow-800"
-                    }`}>
-                      {booking.status === 'paid' ? "Đã thanh toán" : 
-                       booking.status === 'deposit' ? "Đã đặt cọc" : "Chờ thanh toán"}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+      <Card className="mt-6">
+        <CardContent className="p-6">
+          <h2 className="text-lg font-semibold mb-4">Lịch đặt sân</h2>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+            {/* Calendar */}
+            <div className="lg:col-span-2">
+              <div ref={calendarRef} className="border rounded-md p-4">
+                <Calendar
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={(date) => date && setSelectedDate(date)}
+                  className="w-full p-0"
+                  modifiers={{
+                    booked: bookedDates
+                  }}
+                  modifiersStyles={{
+                    booked: { backgroundColor: '#059669', color: 'white', fontWeight: 'bold' }
+                  }}
+                />
+              </div>
+              
+              <div className="mt-4">
+                <div className="flex items-center gap-2 text-sm mb-2">
+                  <div className="w-4 h-4 bg-field-600 rounded-full"></div>
+                  <span>Ngày có đặt sân</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <div className="w-4 h-4 border rounded-full"></div>
+                  <span>Ngày chưa có đặt sân</span>
+                </div>
+              </div>
+            </div>
+            
+            {/* Bookings for Selected Date */}
+            <div className="lg:col-span-3">
+              <div className="border rounded-md overflow-hidden">
+                <div className="bg-gray-50 p-3 border-b">
+                  <h3 className="font-medium">
+                    Đặt sân ngày: {format(selectedDate, 'dd/MM/yyyy')}
+                  </h3>
+                </div>
+                
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Khách hàng</TableHead>
+                        <TableHead>Sân</TableHead>
+                        <TableHead>Thời gian</TableHead>
+                        <TableHead>Giá</TableHead>
+                        <TableHead>Trạng thái</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredBookings.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={5} className="h-32 text-center">
+                            Không có đặt sân nào vào ngày này
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        filteredBookings.map((booking) => (
+                          <TableRow key={booking.id}>
+                            <TableCell>
+                              <div>
+                                <div className="font-medium">{booking.customer}</div>
+                                <div className="text-xs text-gray-500">{booking.phone}</div>
+                              </div>
+                            </TableCell>
+                            <TableCell>{booking.field}</TableCell>
+                            <TableCell>{booking.time}</TableCell>
+                            <TableCell>{booking.price.toLocaleString()}đ</TableCell>
+                            <TableCell>
+                              <Badge className={`
+                                ${booking.status === 'paid' ? "bg-green-100 text-green-800" : 
+                                 booking.status === 'deposit' ? "bg-blue-100 text-blue-800" : "bg-yellow-100 text-yellow-800"}
+                              `}>
+                                {booking.status === 'paid' ? "Đã thanh toán" : 
+                                 booking.status === 'deposit' ? "Đã đặt cọc" : "Chờ thanh toán"}
+                              </Badge>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
       </Card>
     </div>
   );

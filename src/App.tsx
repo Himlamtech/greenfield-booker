@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import UserLayout from "./layouts/UserLayout";
 import AdminLayout from "./layouts/AdminLayout";
 
@@ -26,16 +26,35 @@ const queryClient = new QueryClient();
 
 // Component để tải Google Maps API
 const GoogleMapsLoader = () => {
+  const [isLoaded, setIsLoaded] = useState(false);
+  const apiKey = "AIzaSyBnigY9gkLxKhMdVoqUeCHUTOypSoeVz3I";
+
   useEffect(() => {
     // Kiểm tra xem script đã được tải chưa
     if (!document.querySelector('script[src*="maps.googleapis.com/maps/api"]')) {
       const script = document.createElement("script");
-      script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyBnigY9gkLxKhMdVoqUeCHUTOypSoeVz3I&libraries=places`;
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
       script.async = true;
       script.defer = true;
+      
+      script.onload = () => {
+        console.log("Google Maps API loaded successfully");
+        setIsLoaded(true);
+      };
+      
+      script.onerror = (error) => {
+        console.error("Error loading Google Maps API:", error);
+      };
+      
       document.head.appendChild(script);
+    } else {
+      setIsLoaded(true);
     }
-  }, []);
+    
+    return () => {
+      // Cleanup nếu cần
+    };
+  }, [apiKey]);
 
   return null;
 };

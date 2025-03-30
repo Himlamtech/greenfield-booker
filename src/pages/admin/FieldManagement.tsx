@@ -137,6 +137,10 @@ const FieldManagement = () => {
   const [showLockDialog, setShowLockDialog] = useState(false);
   const [lockReason, setLockReason] = useState("");
   const [lockingSlot, setLockingSlot] = useState<{ fieldId: number, slotId: number } | null>(null);
+  const [showBulkEditDialog, setShowBulkEditDialog] = useState(false);
+  const [selectedTimeSlots, setSelectedTimeSlots] = useState<number[]>([]);
+  const [bulkPrice, setBulkPrice] = useState<string>("");
+  const [bulkPriceType, setBulkPriceType] = useState<"weekday" | "weekend" | "both">("both");
   
   const { toast } = useToast();
   
@@ -171,6 +175,27 @@ const FieldManagement = () => {
     setEditingTimeSlot(null);
     setWeekdayPrice("");
     setWeekendPrice("");
+  };
+
+  const handleToggleSlotSelection = (slotId: number) => {
+    if (selectedTimeSlots.includes(slotId)) {
+      setSelectedTimeSlots(selectedTimeSlots.filter(id => id !== slotId));
+    } else {
+      setSelectedTimeSlots([...selectedTimeSlots, slotId]);
+    }
+  };
+
+  const handleBulkUpdatePrice = () => {
+    if (!bulkPrice || selectedTimeSlots.length === 0) return;
+  
+    toast({
+      title: "Cập nhật giá hàng loạt thành công",
+      description: `Đã cập nhật giá cho ${selectedTimeSlots.length} khung giờ.`,
+    });
+
+    setShowBulkEditDialog(false);
+    setBulkPrice("");
+    setSelectedTimeSlots([]);
   };
   
   const handleLockTimeSlot = () => {
@@ -259,7 +284,19 @@ const FieldManagement = () => {
         <div>
           <Card>
             <CardContent className="p-6">
-              <h2 className="text-lg font-semibold mb-4">Quản lý giá sân</h2>
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-lg font-semibold">Quản lý giá sân</h2>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setSelectedTimeSlots([]);
+                    setShowBulkEditDialog(true);
+                  }}
+                >
+                  Chỉnh sửa hàng loạt
+                </Button>
+              </div>
               
               <div className="border rounded-md">
                 <div className="grid grid-cols-3 bg-gray-50 p-3 font-medium text-sm border-b">
@@ -273,7 +310,15 @@ const FieldManagement = () => {
                       key={slot.id} 
                       className="grid grid-cols-3 p-3 border-b last:border-b-0 items-center text-sm hover:bg-gray-50"
                     >
-                      <div>{slot.time}</div>
+                      <div className="flex items-center gap-2">
+                        <input 
+                          type="checkbox"
+                          className="rounded border-gray-300"
+                          checked={selectedTimeSlots.includes(slot.id)}
+                          onChange={() => handleToggleSlotSelection(slot.id)}
+                        />
+                        <span>{slot.time}</span>
+                      </div>
                       <div>{slot.weekdayPrice.toLocaleString()}đ</div>
                       <div className="flex items-center justify-between">
                         <span>{slot.weekendPrice.toLocaleString()}đ</span>
@@ -560,6 +605,83 @@ const FieldManagement = () => {
               onClick={handleLockTimeSlot}
             >
               Xác nhận khóa
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Edit Time Slots Dialog */}
+      <Dialog open={showBulkEditDialog} onOpenChange={setShowBulkEditDialog}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Chỉnh sửa giá hàng loạt</DialogTitle>
+            <DialogDescription>
+              Chọn các khung giờ và cập nhật giá cùng lúc
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid gap-4 py-4">
+            <div className="border rounded p-3 max-h-[200px] overflow-y-auto">
+              {timeSlots.map(slot => (
+                <div key={slot.id} className="flex items-center gap-2 py-1">
+                  <input
+                    type="checkbox"
+                    id={`slot-${slot.id}`}
+                    checked={selectedTimeSlots.includes(slot.id)}
+                    onChange={() => handleToggleSlotSelection(slot.id)}
+                    className="rounded border-gray-300"
+                  />
+                  <label htmlFor={`slot-${slot.id}`} className="text-sm">{slot.time}</label>
+                </div>
+              ))}
+            </div>
+
+            <div>
+              <label className="text-sm font-medium mb-1 block">Áp dụng cho</label>
+              <select
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-field-500"
+                value={bulkPriceType}
+                onChange={(e) => setBulkPriceType(e.target.value as "weekday" | "weekend" | "both")}
+              >
+                <option value="weekday">Giá ngày thường</option>
+                <option value="weekend">Giá cuối tuần</option>
+                <option value="both">Cả hai loại giá</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium mb-1 block">Giá mới (VNĐ)</label>
+              <Input
+                type="number"
+                placeholder="Nhập giá mới"
+                value={bulkPrice}
+                onChange={(e) => setBulkPrice(e.target.value)}
+              />
+            </div>
+
+            <div className="flex items-center gap-2 pt-2">
+              <div className="text-sm text-gray-600">
+                Đã chọn: <span className="font-medium">{selectedTimeSlots.length}</span> khung giờ
+              </div>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setShowBulkEditDialog(false);
+                setSelectedTimeSlots([]);
+              }}
+            >
+              Hủy
+            </Button>
+            <Button 
+              className="bg-field-600 hover:bg-field-700"
+              onClick={handleBulkUpdatePrice}
+              disabled={selectedTimeSlots.length === 0 || !bulkPrice}
+            >
+              Cập nhật giá
             </Button>
           </DialogFooter>
         </DialogContent>

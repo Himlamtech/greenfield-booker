@@ -3,10 +3,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { MapPin, Mail, Phone, Calendar, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
+import { toast } from "@/components/ui/use-toast";
 
 const Home = () => {
   const mapRef = useRef<HTMLDivElement>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
+  const [mapError, setMapError] = useState(false);
   
   useEffect(() => {
     // Theo dõi khi Google Maps API được tải
@@ -20,12 +22,26 @@ const Home = () => {
       }
     };
     
-    checkGoogleMapsLoaded();
+    // Bắt đầu kiểm tra sau 1 giây để đảm bảo script có thời gian để tải
+    const timer = setTimeout(checkGoogleMapsLoaded, 1000);
+    
+    // Đặt timeout để thông báo lỗi nếu không tải được sau 10 giây
+    const errorTimer = setTimeout(() => {
+      if (!mapLoaded) {
+        setMapError(true);
+        toast({
+          title: "Không thể tải Google Maps",
+          description: "Vui lòng kiểm tra kết nối mạng hoặc thử lại sau.",
+          variant: "destructive"
+        });
+      }
+    }, 10000);
     
     return () => {
-      // Cleanup nếu cần
+      clearTimeout(timer);
+      clearTimeout(errorTimer);
     };
-  }, []);
+  }, [mapLoaded]);
   
   const initMap = () => {
     if (!mapRef.current || !window.google) return;
@@ -45,6 +61,12 @@ const Home = () => {
       });
     } catch (error) {
       console.error("Error initializing map:", error);
+      setMapError(true);
+      toast({
+        title: "Không thể hiển thị bản đồ",
+        description: "Có lỗi xảy ra khi tải Google Maps.",
+        variant: "destructive"
+      });
     }
   };
   
@@ -182,7 +204,17 @@ const Home = () => {
           
           {/* Google Map */}
           <div className="mt-8 h-80 border border-gray-300 rounded-lg overflow-hidden">
-            <div ref={mapRef} className="w-full h-full"></div>
+            {mapError ? (
+              <div className="w-full h-full flex flex-col items-center justify-center bg-gray-100">
+                <MapPin className="h-12 w-12 text-field-500 mb-2" />
+                <p className="text-gray-700 font-medium">Không thể tải bản đồ</p>
+                <p className="text-gray-500 text-sm text-center px-4">
+                  Địa chỉ: 96A Đ. Trần Phú, P. Mộ Lao, Hà Đông, Hà Nội
+                </p>
+              </div>
+            ) : (
+              <div ref={mapRef} className="w-full h-full"></div>
+            )}
           </div>
         </div>
 
