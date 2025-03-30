@@ -17,6 +17,16 @@ import {
 import { format, addDays, subDays, startOfWeek, endOfWeek, isWithinInterval, isSameDay } from "date-fns";
 import { vi } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
+import {
+  BarChart as RechartsBarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  TooltipProps
+} from "recharts";
 
 const Dashboard = () => {
   const [periodType, setPeriodType] = useState<"day" | "week" | "month" | "year">("week");
@@ -99,6 +109,19 @@ const Dashboard = () => {
       default:
         return [];
     }
+  };
+
+  // Custom tooltip cho biểu đồ
+  const CustomTooltip = ({ active, payload, label }: TooltipProps<number, string>) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white p-2 border border-gray-200 shadow-md rounded-md">
+          <p className="font-medium">{label}</p>
+          <p className="text-field-600">{`${payload[0].value?.toLocaleString()} đ`}</p>
+        </div>
+      );
+    }
+    return null;
   };
 
   // Dữ liệu so sánh với kỳ trước đó
@@ -325,21 +348,31 @@ const Dashboard = () => {
           )}
           
           <div className="h-80">
-            <div className="w-full h-full flex items-end">
-              {chartData.map((item, index) => (
-                <div key={index} className="flex flex-col items-center flex-1">
-                  <div 
-                    className="w-full max-w-[60px] bg-field-600 rounded-t-md" 
-                    style={{ 
-                      height: `${(item.value / Math.max(...chartData.map(d => d.value))) * 80}%`,
-                      opacity: 0.7 + (index / 10)
-                    }}
-                  ></div>
-                  <div className="mt-2 text-xs font-medium">{item.name}</div>
-                  <div className="text-[10px] text-gray-500">{(item.value/1000).toFixed(0)}k</div>
-                </div>
-              ))}
-            </div>
+            <ResponsiveContainer width="100%" height="100%">
+              <RechartsBarChart
+                data={chartData}
+                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis 
+                  dataKey="name"
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <YAxis 
+                  axisLine={false}
+                  tickLine={false}
+                  tickFormatter={(value) => `${(value/1000).toFixed(0)}k`}
+                />
+                <Tooltip content={<CustomTooltip />} />
+                <Bar 
+                  dataKey="value" 
+                  fill="#059669"
+                  radius={[4, 4, 0, 0]}
+                  maxBarSize={60}
+                />
+              </RechartsBarChart>
+            </ResponsiveContainer>
           </div>
         </Card>
       </div>
@@ -443,3 +476,4 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
+

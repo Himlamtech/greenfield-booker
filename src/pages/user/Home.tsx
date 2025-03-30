@@ -52,13 +52,40 @@ const Home = () => {
       const map = new window.google.maps.Map(mapRef.current, {
         center: location,
         zoom: 16,
+        mapTypeControl: false,
+        streetViewControl: false,
       });
       
-      new window.google.maps.Marker({
-        position: location,
-        map,
-        title: "Sân Bóng Xanh",
+      // Sử dụng AdvancedMarkerElement thay vì Marker (được khuyến nghị hơn)
+      if (window.google.maps.marker && window.google.maps.marker.AdvancedMarkerElement) {
+        const marker = new window.google.maps.marker.AdvancedMarkerElement({
+          map,
+          position: location,
+          title: "Sân Bóng Xanh",
+        });
+      } else {
+        // Fallback to regular marker if AdvancedMarker is not available
+        const marker = new window.google.maps.Marker({
+          position: location,
+          map,
+          title: "Sân Bóng Xanh",
+        });
+      }
+
+      // Thêm InfoWindow để hiển thị thông tin khi click vào marker
+      const infoWindow = new window.google.maps.InfoWindow({
+        content: `
+          <div style="padding: 10px;">
+            <h3 style="margin-bottom: 5px; font-weight: bold;">Sân Bóng Xanh</h3>
+            <p style="margin: 0;">96A Đ. Trần Phú, P. Mộ Lao, Hà Đông, Hà Nội</p>
+            <p style="margin: 0; margin-top: 5px;"><strong>SĐT:</strong> 0123 456 789</p>
+          </div>
+        `
       });
+      
+      // Tự động mở infoWindow khi trang load xong
+      infoWindow.open(map);
+      infoWindow.setPosition(location);
     } catch (error) {
       console.error("Error initializing map:", error);
       setMapError(true);
