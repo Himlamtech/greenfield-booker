@@ -22,10 +22,8 @@ import Feedback from "./pages/admin/Feedback";
 // Not Found Page
 import NotFound from "./pages/NotFound";
 
-const queryClient = new QueryClient();
-
 // Component để tải Google Maps API
-const GoogleMapsLoader = () => {
+const GoogleMapsLoader = ({ children }: { children: React.ReactNode }) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const apiKey = "AIzaSyBnigY9gkLxKhMdVoqUeCHUTOypSoeVz3I";
 
@@ -56,37 +54,43 @@ const GoogleMapsLoader = () => {
     };
   }, [apiKey]);
 
-  return null;
+  return <>{children}</>; // Return children regardless of loading state
 };
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <GoogleMapsLoader />
-    <Toaster />
-    <Sonner />
+// Create queryClient outside of component to avoid recreation on re-render
+const queryClient = new QueryClient();
+
+const App = () => {
+  return (
     <BrowserRouter>
-      <Routes>
-        {/* User Routes */}
-        <Route path="/" element={<UserLayout />}>
-          <Route index element={<Home />} />
-          <Route path="dat-san" element={<BookingField />} />
-          <Route path="giao-luu" element={<FindOpponents />} />
-          <Route path="dich-vu" element={<Services />} />
-        </Route>
-        
-        {/* Admin Routes */}
-        <Route path="/admin" element={<AdminLayout />}>
-          <Route index element={<Dashboard />} />
-          <Route path="quan-ly-san" element={<FieldManagement />} />
-          <Route path="quan-ly-san-pham" element={<ProductManagement />} />
-          <Route path="phan-hoi" element={<Feedback />} />
-        </Route>
-        
-        {/* 404 Page */}
-        <Route path="*" element={<NotFound />} />
-      </Routes>
+      <GoogleMapsLoader>
+        <QueryClientProvider client={queryClient}>
+          <Toaster />
+          <Sonner />
+          <Routes>
+            {/* User Routes */}
+            <Route path="/" element={<UserLayout />}>
+              <Route index element={<Home />} />
+              <Route path="dat-san" element={<BookingField />} />
+              <Route path="giao-luu" element={<FindOpponents />} />
+              <Route path="dich-vu" element={<Services />} />
+            </Route>
+            
+            {/* Admin Routes */}
+            <Route path="/admin" element={<AdminLayout />}>
+              <Route index element={<Dashboard />} />
+              <Route path="quan-ly-san" element={<FieldManagement />} />
+              <Route path="quan-ly-san-pham" element={<ProductManagement />} />
+              <Route path="phan-hoi" element={<Feedback />} />
+            </Route>
+            
+            {/* 404 Page */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </QueryClientProvider>
+      </GoogleMapsLoader>
     </BrowserRouter>
-  </QueryClientProvider>
-);
+  );
+};
 
 export default App;
