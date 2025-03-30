@@ -1,4 +1,3 @@
-
 /// <reference types="vite/client" />
 
 // Declare Google Maps types
@@ -9,9 +8,13 @@ interface Window {
       Marker: new (options: any) => any;
       InfoWindow: new (options: any) => any;
       LatLng: new (lat: number, lng: number) => any;
+      event: {
+        addListener: (instance: any, eventName: string, handler: Function) => void;
+      };
       marker?: {
         AdvancedMarkerElement: new (options: any) => any;
       };
     };
   };
+  initMap?: () => void; // Callback function for Google Maps
 }

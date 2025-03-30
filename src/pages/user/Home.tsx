@@ -11,42 +11,60 @@ const Home = () => {
   const [mapError, setMapError] = useState(false);
   
   useEffect(() => {
-    // Theo dõi khi Google Maps API được tải
-    const checkGoogleMapsLoaded = () => {
+    let isMounted = true;
+    let checkInterval: NodeJS.Timeout;
+    let errorTimeout: NodeJS.Timeout;
+    
+    // Function to initialize map once Google Maps is available
+    const initializeMap = () => {
+      if (!isMounted) return;
+      
       if (window.google && window.google.maps) {
+        console.log("Google Maps detected in Home component");
         setMapLoaded(true);
+        clearInterval(checkInterval);
+        clearTimeout(errorTimeout);
         initMap();
-      } else {
-        // Kiểm tra lại sau 500ms
-        setTimeout(checkGoogleMapsLoaded, 500);
       }
     };
     
-    // Bắt đầu kiểm tra sau 1 giây để đảm bảo script có thời gian để tải
-    const timer = setTimeout(checkGoogleMapsLoaded, 1000);
+    // Start checking for Google Maps with shorter intervals
+    checkInterval = setInterval(initializeMap, 300);
     
-    // Đặt timeout để thông báo lỗi nếu không tải được sau 10 giây
-    const errorTimer = setTimeout(() => {
-      if (!mapLoaded) {
+    // Set a timeout to show error if maps don't load after 15 seconds
+    errorTimeout = setTimeout(() => {
+      if (isMounted && !mapLoaded) {
+        console.error("Google Maps failed to load after timeout");
         setMapError(true);
+        clearInterval(checkInterval);
         toast({
           title: "Không thể tải Google Maps",
           description: "Vui lòng kiểm tra kết nối mạng hoặc thử lại sau.",
           variant: "destructive"
         });
       }
-    }, 10000);
+    }, 15000);
     
+    // Try to initialize immediately in case maps are already loaded
+    initializeMap();
+    
+    // Cleanup function
     return () => {
-      clearTimeout(timer);
-      clearTimeout(errorTimer);
+      isMounted = false;
+      clearInterval(checkInterval);
+      clearTimeout(errorTimeout);
     };
   }, [mapLoaded]);
   
   const initMap = () => {
-    if (!mapRef.current || !window.google) return;
+    if (!mapRef.current || !window.google || !window.google.maps) {
+      console.error("Required dependencies for map not available");
+      setMapError(true);
+      return;
+    }
     
     try {
+      console.log("Initializing map in Home component");
       const location = { lat: 20.9732762, lng: 105.7875231 }; // Tọa độ 96A Đ. Trần Phú, Hà Đông
       
       const map = new window.google.maps.Map(mapRef.current, {
@@ -56,36 +74,45 @@ const Home = () => {
         streetViewControl: false,
       });
       
-      // Sử dụng AdvancedMarkerElement thay vì Marker (được khuyến nghị hơn)
-      if (window.google.maps.marker && window.google.maps.marker.AdvancedMarkerElement) {
-        const marker = new window.google.maps.marker.AdvancedMarkerElement({
-          map,
-          position: location,
-          title: "Sân Bóng Xanh",
-        });
-      } else {
-        // Fallback to regular marker if AdvancedMarker is not available
+      // Make sure that marker creation works across Google Maps versions
+      try {
+        // First try with standard marker which always works
         const marker = new window.google.maps.Marker({
           position: location,
           map,
           title: "Sân Bóng Xanh",
         });
+        
+        // Thêm InfoWindow để hiển thị thông tin
+        const infoWindow = new window.google.maps.InfoWindow({
+          content: `
+            <div style="padding: 10px;">
+              <h3 style="margin-bottom: 5px; font-weight: bold;">Sân Bóng Xanh</h3>
+              <p style="margin: 0;">96A Đ. Trần Phú, P. Mộ Lao, Hà Đông, Hà Nội</p>
+              <p style="margin: 0; margin-top: 5px;"><strong>SĐT:</strong> 0123 456 789</p>
+            </div>
+          `
+        });
+        
+        // Automatically open the info window and position it
+        infoWindow.open(map, marker);
+        
+        // Add click listener to marker to open info window
+        marker.addListener("click", () => {
+          infoWindow.open(map, marker);
+        });
+        
+        console.log("Map initialized successfully");
+      } catch (markerError) {
+        console.error("Error creating marker:", markerError);
+        // If standard marker fails, show error
+        setMapError(true);
+        toast({
+          title: "Lỗi hiển thị bản đồ",
+          description: "Không thể tạo điểm đánh dấu trên bản đồ.",
+          variant: "destructive"
+        });
       }
-
-      // Thêm InfoWindow để hiển thị thông tin khi click vào marker
-      const infoWindow = new window.google.maps.InfoWindow({
-        content: `
-          <div style="padding: 10px;">
-            <h3 style="margin-bottom: 5px; font-weight: bold;">Sân Bóng Xanh</h3>
-            <p style="margin: 0;">96A Đ. Trần Phú, P. Mộ Lao, Hà Đông, Hà Nội</p>
-            <p style="margin: 0; margin-top: 5px;"><strong>SĐT:</strong> 0123 456 789</p>
-          </div>
-        `
-      });
-      
-      // Tự động mở infoWindow khi trang load xong
-      infoWindow.open(map);
-      infoWindow.setPosition(location);
     } catch (error) {
       console.error("Error initializing map:", error);
       setMapError(true);
