@@ -1,9 +1,13 @@
 
 import { Outlet, NavLink } from "react-router-dom";
-import { BarChart, Calendar, ShoppingCart, FileText } from "lucide-react";
+import { BarChart, Calendar, ShoppingCart, FileText, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAdminAuth } from "@/hooks/useAdminAuth";
+import { Button } from "@/components/ui/button";
 
 const AdminLayout = () => {
+  const { admin, logout } = useAdminAuth();
+
   return (
     <div className="min-h-screen flex bg-gray-100">
       {/* Sidebar */}
@@ -89,7 +93,16 @@ const AdminLayout = () => {
           <div className="px-6 py-4 flex items-center justify-between">
             <h2 className="text-lg font-semibold">Dashboard</h2>
             <div className="flex items-center space-x-4">
-              <span className="text-sm font-medium">Admin</span>
+              <span className="text-sm font-medium">{admin?.email}</span>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={logout}
+                className="flex items-center gap-2 text-red-500 hover:text-red-700 hover:bg-red-50"
+              >
+                <LogOut className="h-4 w-4" />
+                <span>Đăng xuất</span>
+              </Button>
             </div>
           </div>
         </header>
