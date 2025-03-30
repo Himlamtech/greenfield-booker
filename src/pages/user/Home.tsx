@@ -2,127 +2,17 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { MapPin, Mail, Phone, Calendar, Users } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useEffect, useRef, useState } from "react";
-import { toast } from "@/components/ui/use-toast";
 
 const Home = () => {
-  const mapRef = useRef<HTMLDivElement>(null);
-  const [mapLoaded, setMapLoaded] = useState(false);
-  const [mapError, setMapError] = useState(false);
-  
-  useEffect(() => {
-    let isMounted = true;
-    let checkInterval: NodeJS.Timeout;
-    let errorTimeout: NodeJS.Timeout;
-    
-    // Function to initialize map once Google Maps is available
-    const initializeMap = () => {
-      if (!isMounted) return;
-      
-      if (window.google && window.google.maps) {
-        console.log("Google Maps detected in Home component");
-        setMapLoaded(true);
-        clearInterval(checkInterval);
-        clearTimeout(errorTimeout);
-        initMap();
-      }
-    };
-    
-    // Start checking for Google Maps with shorter intervals
-    checkInterval = setInterval(initializeMap, 300);
-    
-    // Set a timeout to show error if maps don't load after 15 seconds
-    errorTimeout = setTimeout(() => {
-      if (isMounted && !mapLoaded) {
-        console.error("Google Maps failed to load after timeout");
-        setMapError(true);
-        clearInterval(checkInterval);
-        toast({
-          title: "Không thể tải Google Maps",
-          description: "Vui lòng kiểm tra kết nối mạng hoặc thử lại sau.",
-          variant: "destructive"
-        });
-      }
-    }, 15000);
-    
-    // Try to initialize immediately in case maps are already loaded
-    initializeMap();
-    
-    // Cleanup function
-    return () => {
-      isMounted = false;
-      clearInterval(checkInterval);
-      clearTimeout(errorTimeout);
-    };
-  }, [mapLoaded]);
-  
-  const initMap = () => {
-    if (!mapRef.current || !window.google || !window.google.maps) {
-      console.error("Required dependencies for map not available");
-      setMapError(true);
-      return;
-    }
-    
-    try {
-      console.log("Initializing map in Home component");
-      const location = { lat: 20.9732762, lng: 105.7875231 }; // Tọa độ 96A Đ. Trần Phú, Hà Đông
-      
-      const map = new window.google.maps.Map(mapRef.current, {
-        center: location,
-        zoom: 16,
-        mapTypeControl: false,
-        streetViewControl: false,
-      });
-      
-      // Make sure that marker creation works across Google Maps versions
-      try {
-        // First try with standard marker which always works
-        const marker = new window.google.maps.Marker({
-          position: location,
-          map,
-          title: "Sân Bóng Xanh",
-        });
-        
-        // Thêm InfoWindow để hiển thị thông tin
-        const infoWindow = new window.google.maps.InfoWindow({
-          content: `
-            <div style="padding: 10px;">
-              <h3 style="margin-bottom: 5px; font-weight: bold;">Sân Bóng Xanh</h3>
-              <p style="margin: 0;">96A Đ. Trần Phú, P. Mộ Lao, Hà Đông, Hà Nội</p>
-              <p style="margin: 0; margin-top: 5px;"><strong>SĐT:</strong> 0123 456 789</p>
-            </div>
-          `
-        });
-        
-        // Automatically open the info window and position it
-        infoWindow.open(map, marker);
-        
-        // Add click listener to marker to open info window
-        marker.addListener("click", () => {
-          infoWindow.open(map, marker);
-        });
-        
-        console.log("Map initialized successfully");
-      } catch (markerError) {
-        console.error("Error creating marker:", markerError);
-        // If standard marker fails, show error
-        setMapError(true);
-        toast({
-          title: "Lỗi hiển thị bản đồ",
-          description: "Không thể tạo điểm đánh dấu trên bản đồ.",
-          variant: "destructive"
-        });
-      }
-    } catch (error) {
-      console.error("Error initializing map:", error);
-      setMapError(true);
-      toast({
-        title: "Không thể hiển thị bản đồ",
-        description: "Có lỗi xảy ra khi tải Google Maps.",
-        variant: "destructive"
-      });
-    }
+  // Location coordinates and address
+  const location = {
+    address: "96A Đ. Trần Phú, P. Mộ Lao, Hà Đông, Hà Nội",
+    lat: 20.9732762,
+    lng: 105.7875231,
   };
+  
+  // Create Google Maps embed URL
+  const googleMapsEmbedUrl = `https://maps.google.com/maps?q=${location.lat},${location.lng}&z=16&output=embed`;
   
   const facilities = [
     {
@@ -258,17 +148,16 @@ const Home = () => {
           
           {/* Google Map */}
           <div className="mt-8 h-80 border border-gray-300 rounded-lg overflow-hidden">
-            {mapError ? (
-              <div className="w-full h-full flex flex-col items-center justify-center bg-gray-100">
-                <MapPin className="h-12 w-12 text-field-500 mb-2" />
-                <p className="text-gray-700 font-medium">Không thể tải bản đồ</p>
-                <p className="text-gray-500 text-sm text-center px-4">
-                  Địa chỉ: 96A Đ. Trần Phú, P. Mộ Lao, Hà Đông, Hà Nội
-                </p>
-              </div>
-            ) : (
-              <div ref={mapRef} className="w-full h-full"></div>
-            )}
+            <iframe 
+              src={googleMapsEmbedUrl}
+              width="100%" 
+              height="100%" 
+              style={{ border: 0 }} 
+              allowFullScreen={false} 
+              loading="lazy" 
+              referrerPolicy="no-referrer-when-downgrade"
+              title="Sân Bóng Xanh location"
+            />
           </div>
         </div>
 
@@ -282,7 +171,7 @@ const Home = () => {
               <div>
                 <h3 className="font-semibold">Địa chỉ</h3>
                 <p className="text-gray-700">
-                  96A Đ. Trần Phú, P. Mộ Lao, Hà Đông, Hà Nội
+                  {location.address}
                 </p>
               </div>
             </div>
