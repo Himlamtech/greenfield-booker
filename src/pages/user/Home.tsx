@@ -3,8 +3,31 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { MapPin, Mail, Phone, Calendar, Users } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useEffect, useRef } from "react";
 
 const Home = () => {
+  const mapRef = useRef<HTMLDivElement>(null);
+  
+  useEffect(() => {
+    // Khởi tạo Google Map
+    if (mapRef.current) {
+      const location = { lat: 20.9732762, lng: 105.7875231 }; // Tọa độ 96A Đ. Trần Phú, Hà Đông
+      
+      // @ts-ignore
+      const map = new window.google.maps.Map(mapRef.current, {
+        center: location,
+        zoom: 16,
+      });
+      
+      // @ts-ignore
+      new window.google.maps.Marker({
+        position: location,
+        map,
+        title: "Sân Bóng Xanh",
+      });
+    }
+  }, []);
+  
   const facilities = [
     {
       title: "Sân cỏ nhân tạo chất lượng cao",
@@ -136,6 +159,11 @@ const Home = () => {
               <p className="text-gray-600">Nơi đam mê hội tụ</p>
             </div>
           </div>
+          
+          {/* Google Map */}
+          <div className="mt-8 h-80 border border-gray-300 rounded-lg overflow-hidden">
+            <div ref={mapRef} className="w-full h-full"></div>
+          </div>
         </div>
 
         <div>
@@ -148,7 +176,7 @@ const Home = () => {
               <div>
                 <h3 className="font-semibold">Địa chỉ</h3>
                 <p className="text-gray-700">
-                  123 Đường Lê Lợi, Quận 1, TP. Hồ Chí Minh
+                  96A Đ. Trần Phú, P. Mộ Lao, Hà Đông, Hà Nội
                 </p>
               </div>
             </div>

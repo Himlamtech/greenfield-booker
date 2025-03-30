@@ -14,18 +14,42 @@ import {
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar } from "@/components/ui/calendar";
-import { format } from "date-fns";
+import { format, addDays, startOfDay } from "date-fns";
 import { vi } from "date-fns/locale";
-import { CalendarIcon, Pencil, Trash2 } from "lucide-react";
+import { CalendarIcon, Pencil, Trash2, Lock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/components/ui/use-toast";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Switch } from "@/components/ui/switch";
 
 interface TimeSlot {
   id: number;
   time: string;
   weekdayPrice: number;
   weekendPrice: number;
+}
+
+interface FieldStatus {
+  fieldId: number;
+  date: Date;
+  timeSlots: {
+    id: number;
+    time: string;
+    isBooked: boolean;
+    isLocked: boolean;
+    customer?: {
+      name: string;
+      phone: string;
+    };
+  }[];
 }
 
 interface Booking {
@@ -58,35 +82,41 @@ const timeSlots: TimeSlot[] = [
   { id: 16, time: "21:00 - 22:00", weekdayPrice: 300000, weekendPrice: 350000 },
 ];
 
-// Dữ liệu đặt sân giả định
-const generateBookings = (): Booking[] => {
-  const bookings: Booking[] = [];
-  const statuses: ("pending" | "confirmed" | "completed" | "cancelled")[] = [
-    "pending", "confirmed", "completed", "cancelled"
-  ];
+// Dữ liệu giả định về trạng thái các sân
+const generateFieldStatus = (): FieldStatus[] => {
+  const fields = [1, 2, 3, 4]; // 4 sân
+  const dates = Array.from({ length: 14 }, (_, i) => addDays(startOfDay(new Date()), i)); // 2 tuần
   
-  for (let i = 1; i <= 20; i++) {
-    const fieldId = Math.floor(Math.random() * 4) + 1; // 1-4
-    const date = new Date();
-    date.setDate(date.getDate() + Math.floor(Math.random() * 14) - 7); // +/- 7 days
-    
-    const timeSlotIndex = Math.floor(Math.random() * timeSlots.length);
-    const status = statuses[Math.floor(Math.random() * statuses.length)];
-    const price = Math.random() > 0.5 ? timeSlots[timeSlotIndex].weekdayPrice : timeSlots[timeSlotIndex].weekendPrice;
-    
-    bookings.push({
-      id: i,
-      fieldId,
-      customerName: `Khách hàng ${i}`,
-      phone: `09${Math.floor(10000000 + Math.random() * 90000000)}`,
-      date,
-      timeSlot: timeSlots[timeSlotIndex].time,
-      status,
-      price
+  const statuses: FieldStatus[] = [];
+  
+  // Tạo dữ liệu cho mỗi sân trong 14 ngày
+  fields.forEach(fieldId => {
+    dates.forEach(date => {
+      statuses.push({
+        fieldId,
+        date,
+        timeSlots: timeSlots.map(slot => {
+          const randomValue = Math.random();
+          const isBooked = randomValue > 0.7; // 30% khả năng đã đặt
+          
+          return {
+            id: slot.id,
+            time: slot.time,
+            isBooked,
+            isLocked: randomValue > 0.95, // 5% khả năng bị khóa
+            ...(isBooked ? {
+              customer: {
+                name: `Khách hàng ${Math.floor(Math.random() * 100)}`,
+                phone: `09${Math.floor(10000000 + Math.random() * 90000000)}`
+              }
+            } : {})
+          };
+        })
+      });
     });
-  }
+  });
   
-  return bookings;
+  return statuses;
 };
 
 const fields = [
@@ -99,33 +129,40 @@ const fields = [
 const FieldManagement = () => {
   const [activeTab, setActiveTab] = useState<string>("1"); // Default is Sân A
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [bookings, setBookings] = useState<Booking[]>(generateBookings());
+  const [bookings] = useState<Booking[]>([]);
+  const [fieldStatuses, setFieldStatuses] = useState<FieldStatus[]>(generateFieldStatus());
   const [editingTimeSlot, setEditingTimeSlot] = useState<TimeSlot | null>(null);
   const [weekdayPrice, setWeekdayPrice] = useState<string>("");
   const [weekendPrice, setWeekendPrice] = useState<string>("");
+  const [showLockDialog, setShowLockDialog] = useState(false);
+  const [lockReason, setLockReason] = useState("");
+  const [lockingSlot, setLockingSlot] = useState<{ fieldId: number, slotId: number } | null>(null);
   
   const { toast } = useToast();
   
-  const filteredBookings = bookings.filter(
-    booking => 
-      booking.fieldId === parseInt(activeTab) && 
-      format(booking.date, "yyyy-MM-dd") === format(selectedDate, "yyyy-MM-dd")
-  ).sort((a, b) => a.timeSlot.localeCompare(b.timeSlot));
+  const currentFieldStatus = fieldStatuses.find(
+    s => s.fieldId === parseInt(activeTab) && 
+    format(s.date, "yyyy-MM-dd") === format(selectedDate, "yyyy-MM-dd")
+  );
+  
+  // Đếm số khung giờ trống
+  const availableSlots = currentFieldStatus?.timeSlots.filter(
+    slot => !slot.isBooked && !slot.isLocked
+  ).length || 0;
+  
+  // Đếm số khung giờ đã đặt
+  const bookedSlots = currentFieldStatus?.timeSlots.filter(
+    slot => slot.isBooked
+  ).length || 0;
+  
+  // Đếm số khung giờ bị khóa
+  const lockedSlots = currentFieldStatus?.timeSlots.filter(
+    slot => slot.isLocked
+  ).length || 0;
   
   const handleUpdatePrice = () => {
     if (!editingTimeSlot) return;
     
-    const updatedTimeSlots = timeSlots.map(slot => 
-      slot.id === editingTimeSlot.id
-        ? { 
-            ...slot, 
-            weekdayPrice: parseInt(weekdayPrice) || slot.weekdayPrice,
-            weekendPrice: parseInt(weekendPrice) || slot.weekendPrice
-          }
-        : slot
-    );
-    
-    // In a real app, this would update the backend
     toast({
       title: "Cập nhật giá thành công",
       description: `Khung giờ ${editingTimeSlot.time} đã được cập nhật.`,
@@ -136,20 +173,80 @@ const FieldManagement = () => {
     setWeekendPrice("");
   };
   
-  const handleStatusChange = (bookingId: number, newStatus: "pending" | "confirmed" | "completed" | "cancelled") => {
-    setBookings(prev => 
-      prev.map(booking => 
-        booking.id === bookingId ? { ...booking, status: newStatus } : booking
-      )
-    );
+  const handleLockTimeSlot = () => {
+    if (!lockingSlot) return;
+    
+    setFieldStatuses(prev => {
+      return prev.map(status => {
+        if (status.fieldId === lockingSlot.fieldId && 
+            format(status.date, "yyyy-MM-dd") === format(selectedDate, "yyyy-MM-dd")) {
+          return {
+            ...status,
+            timeSlots: status.timeSlots.map(slot => 
+              slot.id === lockingSlot.slotId 
+                ? { ...slot, isLocked: true }
+                : slot
+            )
+          };
+        }
+        return status;
+      });
+    });
     
     toast({
-      title: "Cập nhật trạng thái đặt sân",
-      description: `Trạng thái đã được cập nhật thành ${
-        newStatus === "pending" ? "Chờ xác nhận" :
-        newStatus === "confirmed" ? "Đã xác nhận" :
-        newStatus === "completed" ? "Hoàn thành" : "Đã hủy"
-      }`,
+      title: "Đã khóa khung giờ",
+      description: lockReason || "Khung giờ đã được khóa",
+    });
+    
+    setShowLockDialog(false);
+    setLockReason("");
+    setLockingSlot(null);
+  };
+  
+  const handleUnlockTimeSlot = (slotId: number) => {
+    setFieldStatuses(prev => {
+      return prev.map(status => {
+        if (status.fieldId === parseInt(activeTab) && 
+            format(status.date, "yyyy-MM-dd") === format(selectedDate, "yyyy-MM-dd")) {
+          return {
+            ...status,
+            timeSlots: status.timeSlots.map(slot => 
+              slot.id === slotId 
+                ? { ...slot, isLocked: false }
+                : slot
+            )
+          };
+        }
+        return status;
+      });
+    });
+    
+    toast({
+      title: "Đã mở khóa khung giờ",
+      description: "Khung giờ đã được mở khóa và có thể đặt sân"
+    });
+  };
+  
+  // Khóa cả ngày
+  const handleLockEntireDay = () => {
+    setFieldStatuses(prev => {
+      return prev.map(status => {
+        if (status.fieldId === parseInt(activeTab) && 
+            format(status.date, "yyyy-MM-dd") === format(selectedDate, "yyyy-MM-dd")) {
+          return {
+            ...status,
+            timeSlots: status.timeSlots.map(slot => 
+              !slot.isBooked ? { ...slot, isLocked: true } : slot
+            )
+          };
+        }
+        return status;
+      });
+    });
+    
+    toast({
+      title: "Đã khóa tất cả khung giờ trống trong ngày",
+      description: "Tất cả khung giờ trống trong ngày đã bị khóa"
     });
   };
   
@@ -157,7 +254,7 @@ const FieldManagement = () => {
     <div>
       <h1 className="text-2xl font-bold mb-6">Quản lý sân bóng</h1>
       
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Left Panel - Price Management */}
         <div>
           <Card>
@@ -241,13 +338,13 @@ const FieldManagement = () => {
           </Card>
         </div>
         
-        {/* Right Panel - Booking Management */}
-        <div className="lg:col-span-2">
+        {/* Right Panel - Field Status and Booking Management */}
+        <div className="lg:col-span-3">
           <Card>
             <CardContent className="p-6">
               <h2 className="text-lg font-semibold mb-4">Quản lý đặt sân</h2>
               
-              <div className="flex flex-col sm:flex-row gap-4 mb-6">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
                 {/* Field Selection */}
                 <Tabs 
                   defaultValue="1" 
@@ -269,7 +366,7 @@ const FieldManagement = () => {
                   <PopoverTrigger asChild>
                     <Button
                       variant="outline"
-                      className="justify-start text-left ml-auto"
+                      className="justify-start text-left"
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
                       {selectedDate ? (
@@ -291,75 +388,182 @@ const FieldManagement = () => {
                 </Popover>
               </div>
               
-              {/* Bookings Table */}
-              <div className="rounded-md border">
-                <div className="grid grid-cols-6 bg-gray-50 p-3 text-sm font-medium border-b">
-                  <div className="col-span-2">Khách hàng</div>
-                  <div>Giờ</div>
-                  <div>Giá</div>
-                  <div>Trạng thái</div>
-                  <div>Thao tác</div>
-                </div>
-                
-                <div className="divide-y">
-                  {filteredBookings.length > 0 ? (
-                    filteredBookings.map((booking) => (
-                      <div key={booking.id} className="grid grid-cols-6 p-3 items-center text-sm">
-                        <div className="col-span-2">
-                          <p className="font-medium">{booking.customerName}</p>
-                          <p className="text-xs text-gray-500">{booking.phone}</p>
-                        </div>
-                        <div>{booking.timeSlot}</div>
-                        <div>{booking.price.toLocaleString()}đ</div>
-                        <div>
-                          <Badge className={`
-                            ${booking.status === "pending" ? "bg-yellow-100 text-yellow-800" : ""}
-                            ${booking.status === "confirmed" ? "bg-blue-100 text-blue-800" : ""}
-                            ${booking.status === "completed" ? "bg-green-100 text-green-800" : ""}
-                            ${booking.status === "cancelled" ? "bg-red-100 text-red-800" : ""}
-                          `}>
-                            {booking.status === "pending" && "Chờ xác nhận"}
-                            {booking.status === "confirmed" && "Đã xác nhận"}
-                            {booking.status === "completed" && "Hoàn thành"}
-                            {booking.status === "cancelled" && "Đã hủy"}
-                          </Badge>
-                        </div>
-                        <div className="flex space-x-2">
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="h-8"
-                            onClick={() => handleStatusChange(booking.id, "confirmed")}
-                          >
-                            Xác nhận
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            className="h-8 text-red-500 hover:text-red-600 hover:bg-red-50"
-                            onClick={() => handleStatusChange(booking.id, "cancelled")}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="p-6 text-center text-gray-500">
-                      Không có đặt sân cho ngày và sân đã chọn
+              {/* Field Status Summary */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                <Card className="bg-green-50 border-green-100">
+                  <CardContent className="p-4 flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-green-700">Khung giờ trống</p>
+                      <p className="text-2xl font-bold text-green-700">{availableSlots}</p>
                     </div>
-                  )}
-                </div>
+                    <div className="bg-green-100 p-2 rounded-full">
+                      <div className="w-4 h-4 rounded-full bg-green-500"></div>
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card className="bg-blue-50 border-blue-100">
+                  <CardContent className="p-4 flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-blue-700">Đã đặt</p>
+                      <p className="text-2xl font-bold text-blue-700">{bookedSlots}</p>
+                    </div>
+                    <div className="bg-blue-100 p-2 rounded-full">
+                      <div className="w-4 h-4 rounded-full bg-blue-500"></div>
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card className="bg-red-50 border-red-100">
+                  <CardContent className="p-4 flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-red-700">Khung giờ khóa</p>
+                      <p className="text-2xl font-bold text-red-700">{lockedSlots}</p>
+                    </div>
+                    <div className="bg-red-100 p-2 rounded-full">
+                      <div className="w-4 h-4 rounded-full bg-red-500"></div>
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
               
-              {/* Manual Booking Button */}
-              <Button className="mt-6 bg-field-600 hover:bg-field-700">
-                Thêm đặt sân mới
-              </Button>
+              {/* Time Slots Table */}
+              <div className="rounded-md border mb-6">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Khung giờ</TableHead>
+                      <TableHead>Trạng thái</TableHead>
+                      <TableHead>Người đặt</TableHead>
+                      <TableHead className="text-right">Thao tác</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {currentFieldStatus?.timeSlots.map((slot) => (
+                      <TableRow key={slot.id}>
+                        <TableCell className="font-medium">{slot.time}</TableCell>
+                        <TableCell>
+                          {slot.isLocked ? (
+                            <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">Khóa</Badge>
+                          ) : slot.isBooked ? (
+                            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">Đã đặt</Badge>
+                          ) : (
+                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Trống</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {slot.customer ? (
+                            <div>
+                              <div className="font-medium">{slot.customer.name}</div>
+                              <div className="text-xs text-gray-500">{slot.customer.phone}</div>
+                            </div>
+                          ) : (
+                            <span className="text-gray-500">-</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {slot.isLocked ? (
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="h-8"
+                              onClick={() => handleUnlockTimeSlot(slot.id)}
+                            >
+                              Mở khóa
+                            </Button>
+                          ) : !slot.isBooked ? (
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="h-8 text-red-500 hover:text-red-600 hover:bg-red-50"
+                              onClick={() => {
+                                setLockingSlot({ fieldId: parseInt(activeTab), slotId: slot.id });
+                                setShowLockDialog(true);
+                              }}
+                            >
+                              <Lock className="h-4 w-4 mr-1" /> Khóa
+                            </Button>
+                          ) : (
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              className="h-8 text-red-500 hover:text-red-600 hover:bg-red-50"
+                              onClick={() => {
+                                toast({
+                                  title: "Hủy đặt sân",
+                                  description: "Đã hủy đặt sân thành công",
+                                });
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+              
+              {/* Lock Entire Day */}
+              <div className="flex justify-between items-center">
+                <Button className="bg-field-600 hover:bg-field-700">
+                  Thêm đặt sân mới
+                </Button>
+                
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">Khóa tất cả khung giờ trống</span>
+                  <Button 
+                    variant="outline" 
+                    className="border-red-300 text-red-600"
+                    onClick={handleLockEntireDay}
+                  >
+                    <Lock className="h-4 w-4 mr-1" /> Khóa ngày
+                  </Button>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>
       </div>
+      
+      {/* Lock Time Slot Dialog */}
+      <Dialog open={showLockDialog} onOpenChange={setShowLockDialog}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Khóa khung giờ</DialogTitle>
+            <DialogDescription>
+              Nhập lý do khóa khung giờ này.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <p className="text-right col-span-1">Lý do:</p>
+              <div className="col-span-3">
+                <Input
+                  placeholder="Ví dụ: Bảo trì sân"
+                  value={lockReason}
+                  onChange={(e) => setLockReason(e.target.value)}
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setShowLockDialog(false)}
+            >
+              Hủy
+            </Button>
+            <Button 
+              className="bg-field-600 hover:bg-field-700"
+              onClick={handleLockTimeSlot}
+            >
+              Xác nhận khóa
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

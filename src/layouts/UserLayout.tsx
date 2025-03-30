@@ -1,13 +1,13 @@
 
 import { Outlet, NavLink, Link } from "react-router-dom";
-import { Home, Calendar, Users, ShoppingCart } from "lucide-react";
+import { Home, Calendar, Users, ShoppingCart, MapPin, Facebook, Instagram, Youtube } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const UserLayout = () => {
   return (
     <div className="min-h-screen flex flex-col field-gradient">
-      {/* Header */}
-      <header className="bg-white shadow-sm z-10">
+      {/* Header - fixed to top */}
+      <header className="bg-white shadow-sm z-50 sticky top-0">
         <div className="container mx-auto py-4 px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
             {/* Logo */}
@@ -100,7 +100,7 @@ const UserLayout = () => {
             <div>
               <h3 className="text-lg font-semibold mb-4">Sân Bóng Xanh</h3>
               <p className="mb-2">
-                Địa chỉ: 123 Đường Lê Lợi, Quận 1, TP.HCM
+                Địa chỉ: 96A Đ. Trần Phú, P. Mộ Lao, Hà Đông, Hà Nội
               </p>
               <p className="mb-2">Điện thoại: 0123 456 789</p>
               <p>Email: info@sanbongxanh.vn</p>
@@ -113,14 +113,14 @@ const UserLayout = () => {
             <div>
               <h3 className="text-lg font-semibold mb-4">Kết nối</h3>
               <div className="flex space-x-4">
-                <a href="#" className="hover:text-field-300 transition-colors">
-                  Facebook
+                <a href="#" className="hover:text-field-300 transition-colors flex items-center">
+                  <Facebook className="w-5 h-5 mr-1" /> Facebook
                 </a>
-                <a href="#" className="hover:text-field-300 transition-colors">
-                  Instagram
+                <a href="#" className="hover:text-field-300 transition-colors flex items-center">
+                  <Instagram className="w-5 h-5 mr-1" /> Instagram
                 </a>
-                <a href="#" className="hover:text-field-300 transition-colors">
-                  Youtube
+                <a href="#" className="hover:text-field-300 transition-colors flex items-center">
+                  <Youtube className="w-5 h-5 mr-1" /> Youtube
                 </a>
               </div>
             </div>

@@ -6,6 +6,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { ShoppingCart } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import QRCodePayment from "@/components/payment/QRCodePayment";
+import { validateBookingInfo } from "@/components/validation/BookingValidation";
 
 interface Product {
   id: number;
@@ -14,6 +16,7 @@ interface Product {
   image: string;
   category: string;
   description: string;
+  type: "rent" | "buy"; // Thêm loại sản phẩm: thuê hoặc mua
 }
 
 interface CartItem {
@@ -28,7 +31,8 @@ const products: Product[] = [
     price: 350000,
     image: "https://placehold.co/300x300/E8F5E9/388E3C?text=%C3%81o+b%C3%B3ng+%C4%91%C3%A1&font=roboto",
     category: "clothes",
-    description: "Áo bóng đá chất liệu thun lạnh, thoáng mát, thấm hút mồ hôi tốt"
+    description: "Áo bóng đá chất liệu thun lạnh, thoáng mát, thấm hút mồ hôi tốt",
+    type: "buy"
   },
   {
     id: 2,
@@ -36,7 +40,8 @@ const products: Product[] = [
     price: 1200000,
     image: "https://placehold.co/300x300/E8F5E9/388E3C?text=Gi%C3%A0y+b%C3%B3ng+%C4%91%C3%A1&font=roboto",
     category: "shoes",
-    description: "Giày đá bóng sân cỏ nhân tạo, đế TF bám sân tốt"
+    description: "Giày đá bóng sân cỏ nhân tạo, đế TF bám sân tốt",
+    type: "buy"
   },
   {
     id: 3,
@@ -44,7 +49,8 @@ const products: Product[] = [
     price: 450000,
     image: "https://placehold.co/300x300/E8F5E9/388E3C?text=B%C3%B3ng+%C4%91%C3%A1&font=roboto",
     category: "equipment",
-    description: "Bóng đá chất lượng cao, phù hợp cho mọi mặt sân"
+    description: "Bóng đá chất lượng cao, phù hợp cho mọi mặt sân",
+    type: "buy"
   },
   {
     id: 4,
@@ -52,7 +58,8 @@ const products: Product[] = [
     price: 280000,
     image: "https://placehold.co/300x300/E8F5E9/388E3C?text=%C3%81o+th%E1%BB%A7+m%C3%B4n&font=roboto",
     category: "clothes",
-    description: "Áo thủ môn chuyên dụng, có đệm bảo vệ"
+    description: "Áo thủ môn chuyên dụng, có đệm bảo vệ",
+    type: "buy"
   },
   {
     id: 5,
@@ -60,7 +67,8 @@ const products: Product[] = [
     price: 1500000,
     image: "https://placehold.co/300x300/E8F5E9/388E3C?text=Gi%C3%A0y+Nike&font=roboto",
     category: "shoes",
-    description: "Giày đá bóng cao cấp, nhẹ và bám sân tốt"
+    description: "Giày đá bóng cao cấp, nhẹ và bám sân tốt",
+    type: "buy"
   },
   {
     id: 6,
@@ -68,35 +76,88 @@ const products: Product[] = [
     price: 320000,
     image: "https://placehold.co/300x300/E8F5E9/388E3C?text=G%C4%83ng+tay&font=roboto",
     category: "equipment",
-    description: "Găng tay thủ môn có lớp đệm đặc biệt, bảo vệ tay tốt"
+    description: "Găng tay thủ môn có lớp đệm đặc biệt, bảo vệ tay tốt",
+    type: "buy"
   },
   {
     id: 7,
+    name: "Thuê bóng đá",
+    price: 50000,
+    image: "https://placehold.co/300x300/E8F5E9/388E3C?text=Thu%C3%AA+b%C3%B3ng&font=roboto",
+    category: "equipment",
+    description: "Thuê bóng đá chất lượng cao, giá theo giờ",
+    type: "rent"
+  },
+  {
+    id: 8,
+    name: "Thuê giày đá bóng",
+    price: 60000,
+    image: "https://placehold.co/300x300/E8F5E9/388E3C?text=Thu%C3%AA+gi%C3%A0y&font=roboto",
+    category: "shoes",
+    description: "Thuê giày đá bóng các size từ 38-44",
+    type: "rent"
+  },
+  {
+    id: 9,
+    name: "Thuê áo bib màu",
+    price: 30000,
+    image: "https://placehold.co/300x300/E8F5E9/388E3C?text=Thu%C3%AA+%C3%A1o+bib&font=roboto",
+    category: "clothes",
+    description: "Thuê áo bib phân biệt đội, có nhiều màu",
+    type: "rent"
+  },
+  {
+    id: 10,
+    name: "Thuê áo thủ môn",
+    price: 50000,
+    image: "https://placehold.co/300x300/E8F5E9/388E3C?text=Thu%C3%AA+%C3%A1o+th%E1%BB%A7+m%C3%B4n&font=roboto",
+    category: "clothes",
+    description: "Thuê áo thủ môn có đệm bảo vệ",
+    type: "rent"
+  },
+  {
+    id: 11,
     name: "Nước uống thể thao",
     price: 25000,
     image: "https://placehold.co/300x300/E8F5E9/388E3C?text=N%C6%B0%E1%BB%9Bc+u%E1%BB%91ng&font=roboto",
     category: "food",
-    description: "Nước uống thể thao bổ sung điện giải, giúp phục hồi nhanh"
+    description: "Nước uống thể thao bổ sung điện giải, giúp phục hồi nhanh",
+    type: "buy"
   },
   {
-    id: 8,
+    id: 12,
     name: "Bánh năng lượng",
     price: 35000,
     image: "https://placehold.co/300x300/E8F5E9/388E3C?text=B%C3%A1nh+n%C4%83ng+l%C6%B0%E1%BB%A3ng&font=roboto",
     category: "food",
-    description: "Bánh năng lượng giúp bổ sung nhanh năng lượng khi chơi thể thao"
+    description: "Bánh năng lượng giúp bổ sung nhanh năng lượng khi chơi thể thao",
+    type: "buy"
   },
 ];
 
 const Services = () => {
   const [activeTab, setActiveTab] = useState("all");
+  const [activeType, setActiveType] = useState<"all" | "buy" | "rent">("all");
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [showCart, setShowCart] = useState(false);
+  const [showPayment, setShowPayment] = useState(false);
+  const [customerInfo, setCustomerInfo] = useState({
+    name: "",
+    phone: "",
+    email: ""
+  });
+  const [validationError, setValidationError] = useState<string | null>(null);
+  
   const { toast } = useToast();
   
-  const filteredProducts = activeTab === "all" 
-    ? products 
-    : products.filter(product => product.category === activeTab);
+  const filteredProducts = products.filter(product => {
+    // Lọc theo danh mục
+    const matchesCategory = activeTab === "all" || product.category === activeTab;
+    // Lọc theo loại: mua hoặc thuê
+    const matchesType = activeType === "all" || product.type === activeType;
+    
+    return matchesCategory && matchesType;
+  });
   
   const addToCart = (product: Product) => {
     setCartItems(prev => {
@@ -138,12 +199,44 @@ const Services = () => {
   const totalPrice = cartItems.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
   
   const handleCheckout = () => {
+    // Kiểm tra thông tin khách hàng
+    const validationResult = validateBookingInfo(customerInfo.name, customerInfo.phone, customerInfo.email);
+    
+    if (!validationResult.isValid) {
+      setValidationError(validationResult.message || "Thông tin không hợp lệ");
+      toast({
+        variant: "destructive",
+        title: "Lỗi",
+        description: validationResult.message,
+      });
+      return;
+    }
+    
+    // Reset lỗi nếu thông tin hợp lệ
+    setValidationError(null);
+    
+    // Hiển thị QR thanh toán
+    setShowPayment(true);
+  };
+  
+  const handlePaymentSuccess = () => {
+    // Đóng dialog thanh toán
+    setShowPayment(false);
+    
+    // Hiển thị thông báo thành công
     toast({
       title: "Đặt hàng thành công!",
       description: `Cảm ơn bạn đã đặt hàng. Tổng thanh toán: ${totalPrice.toLocaleString()}đ`,
     });
+    
+    // Reset giỏ hàng và form
     setCartItems([]);
     setShowCart(false);
+    setCustomerInfo({
+      name: "",
+      phone: "",
+      email: ""
+    });
   };
   
   return (
@@ -207,6 +300,9 @@ const Services = () => {
                       <div className="ml-4 flex-grow">
                         <h3 className="font-medium">{item.product.name}</h3>
                         <p className="text-sm text-gray-600">{item.product.price.toLocaleString()}đ</p>
+                        <Badge className="mt-1" variant="outline">
+                          {item.product.type === "buy" ? "Mua" : "Thuê"}
+                        </Badge>
                       </div>
                       <div className="flex items-center">
                         <Button 
@@ -241,9 +337,43 @@ const Services = () => {
                     <span className="font-semibold">Tổng thanh toán:</span>
                     <span className="font-semibold">{totalPrice.toLocaleString()}đ</span>
                   </div>
+                  
+                  {/* Thông tin khách hàng */}
+                  <div className="mb-6 space-y-3">
+                    <h3 className="font-semibold">Thông tin khách hàng</h3>
+                    <input
+                      type="text"
+                      placeholder="Họ và tên"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-field-500"
+                      value={customerInfo.name}
+                      onChange={(e) => setCustomerInfo({...customerInfo, name: e.target.value})}
+                    />
+                    <input
+                      type="tel"
+                      placeholder="Số điện thoại (+84, 84 hoặc 0...)"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-field-500"
+                      value={customerInfo.phone}
+                      onChange={(e) => setCustomerInfo({...customerInfo, phone: e.target.value})}
+                    />
+                    <input
+                      type="email"
+                      placeholder="Email"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-field-500"
+                      value={customerInfo.email}
+                      onChange={(e) => setCustomerInfo({...customerInfo, email: e.target.value})}
+                    />
+                    
+                    {validationError && (
+                      <div className="p-3 bg-red-50 text-red-700 rounded-md text-sm">
+                        {validationError}
+                      </div>
+                    )}
+                  </div>
+                  
                   <Button 
                     className="w-full bg-field-600 hover:bg-field-700 text-white"
                     onClick={handleCheckout}
+                    disabled={!cartItems.length || !customerInfo.name || !customerInfo.phone || !customerInfo.email}
                   >
                     Tiến hành thanh toán
                   </Button>
@@ -253,6 +383,17 @@ const Services = () => {
           </CardContent>
         </Card>
       )}
+      
+      {/* Type Selection: Mua hoặc Thuê */}
+      <Tabs defaultValue="all" value={activeType} onValueChange={(value) => setActiveType(value as "all" | "buy" | "rent")}>
+        <div className="flex justify-center mb-6">
+          <TabsList>
+            <TabsTrigger value="all">Tất cả sản phẩm</TabsTrigger>
+            <TabsTrigger value="buy">Mua sản phẩm</TabsTrigger>
+            <TabsTrigger value="rent">Thuê dụng cụ</TabsTrigger>
+          </TabsList>
+        </div>
+      </Tabs>
       
       {/* Product Categories */}
       <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab}>
@@ -280,6 +421,11 @@ const Services = () => {
                     <h3 className="font-semibold">{product.name}</h3>
                     <Badge className="bg-field-600">{product.price.toLocaleString()}đ</Badge>
                   </div>
+                  <div className="mb-2">
+                    <Badge variant="outline">
+                      {product.type === "buy" ? "Mua" : "Thuê"}
+                    </Badge>
+                  </div>
                   <p className="text-sm text-gray-600 mb-4">{product.description}</p>
                   <Button 
                     className="w-full bg-field-600 hover:bg-field-700 text-white"
@@ -300,57 +446,15 @@ const Services = () => {
         </TabsContent>
       </Tabs>
       
-      {/* Services Info */}
-      <div className="mt-16">
-        <h2 className="text-2xl font-semibold mb-6 text-center">Các Dịch Vụ Khác</h2>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card>
-            <CardContent className="p-6 text-center">
-              <div className="w-16 h-16 rounded-full bg-field-100 flex items-center justify-center mx-auto mb-4">
-                <span className="text-3xl">🥅</span>
-              </div>
-              <h3 className="text-lg font-semibold mb-2">Cho thuê dụng cụ</h3>
-              <p className="text-gray-600 text-sm">
-                Cho thuê bóng, giày, áo bib và các dụng cụ tập luyện khác với giá cả phải chăng
-              </p>
-              <Button variant="link" className="text-field-600 mt-2">
-                Chi tiết
-              </Button>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="p-6 text-center">
-              <div className="w-16 h-16 rounded-full bg-field-100 flex items-center justify-center mx-auto mb-4">
-                <span className="text-3xl">👨‍🏫</span>
-              </div>
-              <h3 className="text-lg font-semibold mb-2">Huấn luyện viên</h3>
-              <p className="text-gray-600 text-sm">
-                Đội ngũ HLV chuyên nghiệp, giàu kinh nghiệm sẵn sàng huấn luyện cho đội bóng của bạn
-              </p>
-              <Button variant="link" className="text-field-600 mt-2">
-                Chi tiết
-              </Button>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="p-6 text-center">
-              <div className="w-16 h-16 rounded-full bg-field-100 flex items-center justify-center mx-auto mb-4">
-                <span className="text-3xl">🏆</span>
-              </div>
-              <h3 className="text-lg font-semibold mb-2">Tổ chức giải đấu</h3>
-              <p className="text-gray-600 text-sm">
-                Dịch vụ tổ chức giải đấu chuyên nghiệp với đầy đủ hệ thống bảng đấu, trọng tài
-              </p>
-              <Button variant="link" className="text-field-600 mt-2">
-                Chi tiết
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+      {/* QR Payment Dialog */}
+      <QRCodePayment
+        open={showPayment}
+        onOpenChange={setShowPayment}
+        amount={totalPrice}
+        customerInfo={customerInfo}
+        description={`Thanh toán mua hàng: ${cartItems.length} sản phẩm`}
+        onSuccess={handlePaymentSuccess}
+      />
     </div>
   );
 };

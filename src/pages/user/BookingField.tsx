@@ -21,6 +21,9 @@ import { Calendar as CalendarIcon } from "lucide-react";
 import { vi } from "date-fns/locale";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { validateBookingInfo } from "@/components/validation/BookingValidation";
+import QRCodePayment from "@/components/payment/QRCodePayment";
+import { useToast } from "@/components/ui/use-toast";
 
 interface TimeSlot {
   id: number;
@@ -99,17 +102,48 @@ const BookingField = () => {
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [note, setNote] = useState("");
+  const [showPayment, setShowPayment] = useState(false);
+  const [validationError, setValidationError] = useState<string | null>(null);
   
+  const { toast } = useToast();
   const timeSlots = generateTimeSlots();
   
   const handleBooking = () => {
-    // Xử lý đặt sân
-    alert(`Đặt sân thành công!\n
-    Sân: ${selectedField.name}\n
-    Ngày: ${format(selectedDate, "dd/MM/yyyy")}\n
-    Giờ: ${selectedTimeSlot?.start} - ${selectedTimeSlot?.end}\n
-    Khách hàng: ${customerName}\n
-    SĐT: ${phone}`);
+    // Validate thông tin
+    const validationResult = validateBookingInfo(customerName, phone, email);
+    if (!validationResult.isValid) {
+      setValidationError(validationResult.message || "Thông tin không hợp lệ");
+      toast({
+        variant: "destructive",
+        title: "Lỗi",
+        description: validationResult.message,
+      });
+      return;
+    }
+    
+    // Reset lỗi nếu thông tin hợp lệ
+    setValidationError(null);
+    
+    // Hiển thị QR thanh toán
+    setShowPayment(true);
+  };
+  
+  const handlePaymentSuccess = () => {
+    // Đóng dialog thanh toán
+    setShowPayment(false);
+    
+    // Hiển thị thông báo đặt sân thành công
+    toast({
+      title: "Đặt sân thành công!",
+      description: `Sân: ${selectedField.name}, Ngày: ${format(selectedDate, "dd/MM/yyyy")}, Giờ: ${selectedTimeSlot?.start} - ${selectedTimeSlot?.end}`,
+    });
+    
+    // Reset form
+    setSelectedTimeSlot(null);
+    setCustomerName("");
+    setPhone("");
+    setEmail("");
+    setNote("");
   };
 
   return (
@@ -251,6 +285,7 @@ const BookingField = () => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-field-500"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
+                    placeholder="+84, 84 hoặc 0..."
                   />
                 </div>
                 <div>
@@ -271,6 +306,12 @@ const BookingField = () => {
                     onChange={(e) => setNote(e.target.value)}
                   ></textarea>
                 </div>
+                
+                {validationError && (
+                  <div className="p-3 bg-red-50 text-red-700 rounded-md text-sm">
+                    {validationError}
+                  </div>
+                )}
               </div>
               
               {/* Booking Summary */}
@@ -338,6 +379,20 @@ const BookingField = () => {
           </Card>
         </div>
       </div>
+      
+      {/* QR Payment Dialog */}
+      <QRCodePayment
+        open={showPayment}
+        onOpenChange={setShowPayment}
+        amount={selectedTimeSlot?.price || 0}
+        customerInfo={{
+          name: customerName,
+          phone: phone,
+          email: email
+        }}
+        description={`Đặt ${selectedField.name}, ngày ${format(selectedDate, "dd/MM/yyyy")}, ${selectedTimeSlot?.start || ""} - ${selectedTimeSlot?.end || ""}`}
+        onSuccess={handlePaymentSuccess}
+      />
     </div>
   );
 };
