@@ -2,18 +2,17 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { MapPin, Mail, Phone, Calendar, Users } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useToast } from "@/components/ui/use-toast";
 
 const Home = () => {
-  // Location coordinates and address
   const location = {
     address: "96A Đ. Trần Phú, P. Mộ Lao, Hà Đông, Hà Nội",
     lat: 20.9732762,
     lng: 105.7875231,
   };
-  
-  // Create Google Maps embed URL
+
   const googleMapsEmbedUrl = `https://maps.google.com/maps?q=${location.lat},${location.lng}&z=16&output=embed`;
-  
+
   const facilities = [
     {
       title: "Sân cỏ nhân tạo chất lượng cao",
@@ -36,7 +35,7 @@ const Home = () => {
       icon: "🥤",
     },
   ];
-  
+
   const fields = [
     { id: 1, name: "Sân A", size: "5 người", img: "https://placehold.co/600x400/E8F5E9/388E3C?text=S%C3%82N+A&font=roboto" },
     { id: 2, name: "Sân B", size: "5 người", img: "https://placehold.co/600x400/E8F5E9/388E3C?text=S%C3%82N+B&font=roboto" },
@@ -44,9 +43,21 @@ const Home = () => {
     { id: 4, name: "Sân D", size: "7 người", img: "https://placehold.co/600x400/E8F5E9/388E3C?text=S%C3%82N+D&font=roboto" },
   ];
 
+  const { toast } = useToast();
+
+  const handleFeedbackSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    toast({
+      title: "Gửi phản hồi thành công",
+      description: "Cảm ơn bạn đã gửi phản hồi cho chúng tôi.",
+    });
+    e.currentTarget.reset();
+  };
+
+  const phoneNumber = "0123456789";
+
   return (
     <div className="space-y-16">
-      {/* Hero Section */}
       <section className="py-12 px-4 md:px-0 text-center">
         <div className="max-w-3xl mx-auto">
           <h1 className="text-4xl md:text-5xl font-bold mb-6 text-field-900">
@@ -70,7 +81,6 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Fields Display */}
       <section className="py-12">
         <div className="text-center mb-12">
           <h2 className="text-3xl font-bold text-field-800">Hệ Thống Sân Bóng</h2>
@@ -101,7 +111,6 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Facilities */}
       <section className="py-12 bg-field-50 rounded-lg">
         <div className="text-center mb-12">
           <h2 className="text-3xl font-bold text-field-800">Tiện Nghi & Dịch Vụ</h2>
@@ -124,7 +133,6 @@ const Home = () => {
         </div>
       </section>
 
-      {/* About and Contact */}
       <section className="py-12 grid md:grid-cols-2 gap-8">
         <div>
           <h2 className="text-3xl font-bold text-field-800 mb-6">
@@ -146,7 +154,6 @@ const Home = () => {
             </div>
           </div>
           
-          {/* Google Map */}
           <div className="mt-8 h-80 border border-gray-300 rounded-lg overflow-hidden">
             <iframe 
               src={googleMapsEmbedUrl}
@@ -180,7 +187,9 @@ const Home = () => {
               <Phone className="w-5 h-5 text-field-600 mt-1 mr-3" />
               <div>
                 <h3 className="font-semibold">Điện thoại</h3>
-                <p className="text-gray-700">0123 456 789</p>
+                <a href={`tel:${phoneNumber}`} className="text-gray-700 hover:text-field-600">
+                  {phoneNumber}
+                </a>
               </div>
             </div>
 
@@ -193,36 +202,32 @@ const Home = () => {
             </div>
           </div>
 
-          {/* Contact Form */}
-          <div className="mt-6 bg-white p-6 rounded-lg shadow-md">
-            <h3 className="text-xl font-semibold mb-4">Gửi phản hồi</h3>
-            <form className="space-y-4">
-              <div>
-                <input
-                  type="text"
-                  placeholder="Họ tên"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-field-500"
-                />
-              </div>
-              <div>
-                <input
-                  type="email"
-                  placeholder="Email"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-field-500"
-                />
-              </div>
-              <div>
-                <textarea
-                  placeholder="Nội dung"
-                  rows={3}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-field-500"
-                ></textarea>
-              </div>
-              <Button className="bg-field-600 hover:bg-field-700 text-white w-full">
-                Gửi phản hồi
-              </Button>
-            </form>
-          </div>
+          <form onSubmit={handleFeedbackSubmit} className="space-y-4">
+            <div>
+              <input
+                type="text"
+                placeholder="Họ tên"
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-field-500"
+              />
+            </div>
+            <div>
+              <input
+                type="email"
+                placeholder="Email"
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-field-500"
+              />
+            </div>
+            <div>
+              <textarea
+                placeholder="Nội dung"
+                rows={3}
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-field-500"
+              ></textarea>
+            </div>
+            <Button className="bg-field-600 hover:bg-field-700 text-white w-full">
+              Gửi phản hồi
+            </Button>
+          </form>
         </div>
       </section>
     </div>

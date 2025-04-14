@@ -20,9 +20,8 @@ const AdminLayout = () => {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen flex bg-gray-100">
-        {/* Sidebar */}
-        <aside className="w-64 bg-field-800 text-white">
+      <div className="min-h-screen flex">
+        <aside className="w-64 bg-white shadow-lg sticky top-0 h-screen">
           <div className="p-6">
             <h2 className="text-2xl font-semibold">Admin Panel</h2>
             <p className="text-field-300 text-sm">Sân Bóng Xanh</p>
@@ -98,9 +97,8 @@ const AdminLayout = () => {
           </nav>
         </aside>
 
-        {/* Main Content */}
-        <div className="flex-1 flex flex-col">
-          <header className="bg-white shadow-sm">
+        <main className="flex-1">
+          <header className="sticky top-0 z-10 bg-white shadow-sm p-4">
             <div className="px-6 py-4 flex items-center justify-between">
               <h2 className="text-lg font-semibold">Dashboard</h2>
               <div className="flex items-center space-x-4">
@@ -120,10 +118,10 @@ const AdminLayout = () => {
             </div>
           </header>
 
-          <main className="flex-1 p-6 overflow-auto">
+          <div className="p-6">
             <Outlet />
-          </main>
-        </div>
+          </div>
+        </main>
       </div>
     </ProtectedRoute>
   );

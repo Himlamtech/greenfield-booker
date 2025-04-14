@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -80,6 +79,42 @@ const FindOpponents = () => {
   const { toast } = useToast();
   
   const handlePostTeam = () => {
+    if (!teamName.trim()) {
+      toast({
+        variant: "destructive",
+        title: "Lỗi",
+        description: "Vui lòng nhập tên đội bóng",
+      });
+      return;
+    }
+    
+    if (!location.trim()) {
+      toast({
+        variant: "destructive",
+        title: "Lỗi",
+        description: "Vui lòng nhập địa điểm",
+      });
+      return;
+    }
+    
+    if (!dateTime.trim()) {
+      toast({
+        variant: "destructive",
+        title: "Lỗi",
+        description: "Vui lòng nhập thời gian",
+      });
+      return;
+    }
+    
+    if (!contact.trim()) {
+      toast({
+        variant: "destructive",
+        title: "Lỗi",
+        description: "Vui lòng nhập số điện thoại",
+      });
+      return;
+    }
+    
     const newTeam: Team = {
       id: teams.length + 1,
       name: teamName,
@@ -118,8 +153,8 @@ const FindOpponents = () => {
       <p className="text-center text-gray-600 mb-8">Tìm đối thủ cho đội bóng của bạn</p>
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left Side - Post New Team */}
-        <div>
+        {/* Left Side - Post New Team - Make it sticky */}
+        <div className="sticky top-20">
           <Card>
             <CardContent className="p-6">
               <h2 className="text-xl font-semibold mb-4">Đăng tin tìm đối</h2>

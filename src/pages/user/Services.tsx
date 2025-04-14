@@ -244,21 +244,23 @@ const Services = () => {
       <h1 className="text-3xl font-bold mb-2 text-center">Dịch Vụ & Sản Phẩm</h1>
       <p className="text-center text-gray-600 mb-8">Các sản phẩm và dịch vụ đi kèm tại Sân Bóng Xanh</p>
       
-      {/* Cart Button */}
-      <div className="flex justify-end mb-6">
-        <Button 
-          variant="outline" 
-          className="relative border-field-500 text-field-700"
-          onClick={() => setShowCart(!showCart)}
-        >
-          <ShoppingCart className="w-5 h-5 mr-2" />
-          <span>Giỏ hàng</span>
-          {totalItems > 0 && (
-            <Badge className="absolute -top-2 -right-2 bg-field-600">
-              {totalItems}
-            </Badge>
-          )}
-        </Button>
+      {/* Cart Button - Make it sticky */}
+      <div className="sticky top-20 z-10 bg-white py-4 shadow-sm">
+        <div className="flex justify-end">
+          <Button 
+            variant="outline" 
+            className="relative border-field-500 text-field-700"
+            onClick={() => setShowCart(!showCart)}
+          >
+            <ShoppingCart className="w-5 h-5 mr-2" />
+            <span>Giỏ hàng</span>
+            {totalItems > 0 && (
+              <Badge className="absolute -top-2 -right-2 bg-field-600">
+                {totalItems}
+              </Badge>
+            )}
+          </Button>
+        </div>
       </div>
       
       {/* Cart Display */}
